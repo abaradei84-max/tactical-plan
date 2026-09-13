@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#050816" />
   <title>2027 Tactical Plan Dashboard</title>
-  <link rel="stylesheet" href="styles.css?v=20260913-3" />
+  <link rel="stylesheet" href="styles.css?v=20260913-4" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
@@ -20,7 +20,12 @@
       <div class="section-head"><div><p class="eyebrow">CONNECTED MULTI-SELECT FILTERS</p><h2>Explore the plan</h2></div><p class="hint">Click checkboxes to select multiple values — no Ctrl needed.</p></div>
       <div class="search-wrap"><span>⌕</span><input id="globalSearch" type="search" placeholder="Search customer, specialty, zone or activity…"><button id="clearSearch" class="ghost small">Clear</button></div>
       <div id="selectedChips" class="chips"></div>
-      <div id="filters" class="filters"></div>
+      <div id="filters" class="filters">
+        <div class="filter-box" data-filter-box="member"><label>Team Member</label><input id="fs-member" class="filter-search" type="search" placeholder="Search team member…"><div id="f-member" class="filter-options"><label class="check" data-value="Abdullah Bone"><input type="checkbox"><span>Abdullah Bone</span></label><label class="check" data-value="Rana"><input type="checkbox"><span>Rana</span></label><label class="check" data-value="Abdullah"><input type="checkbox"><span>Abdullah</span></label><label class="check" data-value="Momen"><input type="checkbox"><span>Momen</span></label><label class="check" data-value="Ibraheem"><input type="checkbox"><span>Ibraheem</span></label><label class="check" data-value="BU"><input type="checkbox"><span>BU</span></label></div><div class="filter-actions"><button data-a="all" type="button">Select visible</button><button data-a="clear" type="button">Clear</button></div></div>
+        <div class="filter-box" data-filter-box="specialty"><label>Specialty</label><input id="fs-specialty" class="filter-search" type="search" placeholder="Search specialty…"><div id="f-specialty" class="filter-options"><div class="check">Load Excel to populate</div></div><div class="filter-actions"><button data-a="all" type="button">Select visible</button><button data-a="clear" type="button">Clear</button></div></div>
+        <div class="filter-box" data-filter-box="zone"><label>Zone</label><input id="fs-zone" class="filter-search" type="search" placeholder="Search zone…"><div id="f-zone" class="filter-options"><div class="check">Load Excel to populate</div></div><div class="filter-actions"><button data-a="all" type="button">Select visible</button><button data-a="clear" type="button">Clear</button></div></div>
+        <div class="filter-box" data-filter-box="activity"><label>Type of Activity</label><input id="fs-activity" class="filter-search" type="search" placeholder="Search type of activity…"><div id="f-activity" class="filter-options"><div class="check">Load Excel to populate</div></div><div class="filter-actions"><button data-a="all" type="button">Select visible</button><button data-a="clear" type="button">Clear</button></div></div>
+      </div>
     </section>
 
     <section class="kpis">
@@ -31,29 +36,14 @@
       <article class="kpi glass pink"><span>Customers</span><strong id="kpiCustomers">—</strong><small>Filtered customers</small></article>
     </section>
 
-    <section class="chart-grid two">
-      <article class="glass card"><div class="card-title"><h3>Cost by Specialty</h3><span>Highest cost first</span></div><div id="specialtyChart" class="chart"></div></article>
-      <article class="glass card"><div class="card-title"><h3>Cost by Zone</h3><span>Filtered plan</span></div><div id="zoneChart" class="chart"></div></article>
-    </section>
+    <section class="chart-grid two"><article class="glass card"><div class="card-title"><h3>Cost by Specialty</h3><span>Highest cost first</span></div><div id="specialtyChart" class="chart"></div></article><article class="glass card"><div class="card-title"><h3>Cost by Zone</h3><span>Filtered plan</span></div><div id="zoneChart" class="chart"></div></article></section>
+    <section class="chart-grid two"><article class="glass card"><div class="card-title"><h3>Type of Activity × Specialty</h3><span>Cost relationship</span></div><div id="activityChart" class="chart"></div></article><article class="glass card"><div class="card-title"><h3>Cost by Team Member</h3><span>Abdullah Bone · Rana · Abdullah · Momen · Ibraheem · BU</span></div><div id="memberChart" class="chart"></div></article></section>
 
-    <section class="chart-grid two">
-      <article class="glass card"><div class="card-title"><h3>Type of Activity × Specialty</h3><span>Cost relationship</span></div><div id="activityChart" class="chart"></div></article>
-      <article class="glass card"><div class="card-title"><h3>Cost by Team Member</h3><span>Abdullah Bone · Rana · Abdullah · Momen · Ibraheem · BU</span></div><div id="memberChart" class="chart"></div></article>
-    </section>
-
-    <section class="glass table-card">
-      <div class="card-title"><h3>Team Member Cost Breakdown</h3><span id="memberCount">6 members</span></div>
-      <div class="table-wrap"><table><thead><tr><th>Team Member</th><th>Cost</th><th>% of selected member cost</th></tr></thead><tbody id="memberTable"></tbody></table></div>
-    </section>
-
-    <section class="glass table-card">
-      <div class="card-title"><h3>Specialty / Activity Detail</h3><span>Linked to selected member cost</span></div>
-      <div class="table-wrap"><table><thead><tr><th>Specialty</th><th>Type of Activity</th><th>Zone</th><th>Customers</th><th>Cost</th></tr></thead><tbody id="detailTable"></tbody></table></div>
-    </section>
-
+    <section class="glass table-card"><div class="card-title"><h3>Team Member Cost Breakdown</h3><span id="memberCount">6 members</span></div><div class="table-wrap"><table><thead><tr><th>Team Member</th><th>Cost</th><th>% of selected member cost</th></tr></thead><tbody id="memberTable"></tbody></table></div></section>
+    <section class="glass table-card"><div class="card-title"><h3>Specialty / Activity Detail</h3><span>Linked to selected member cost</span></div><div class="table-wrap"><table><thead><tr><th>Specialty</th><th>Type of Activity</th><th>Zone</th><th>Customers</th><th>Cost</th></tr></thead><tbody id="detailTable"></tbody></table></div></section>
     <section id="empty" class="glass empty"><h2>Load “2027 Tactical Plan - Copy.xlsx”</h2><p>The dashboard reads the <strong>Tracking 2027</strong> sheet locally in your browser. The Excel file is not uploaded to this public repository.</p></section>
   </main>
   <footer>2027 Tactical Plan · Interactive GitHub Pages Dashboard</footer>
-  <script src="app.js?v=20260913-3"></script>
+  <script src="dashboard-v2.js?v=20260913-1"></script>
 </body>
 </html>
