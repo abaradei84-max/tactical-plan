@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#050816" />
+  <title>2027 Tactical Plan Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+  <div class="orb orb-a"></div><div class="orb orb-b"></div>
+  <header class="topbar glass">
+    <div><p class="eyebrow">2027 TACTICAL PLAN</p><h1>Cost Intelligence Dashboard</h1><p class="sub">Specialty, activity, team member and zone analysis</p></div>
+    <div class="actions"><label class="primary" for="excelFile">Load Excel</label><input id="excelFile" type="file" accept=".xlsx,.xls" hidden><button id="reset" class="ghost">Reset Filters</button><span id="status" class="pill">No data loaded</span></div>
+  </header>
+  <main>
+    <section class="glass filter-panel">
+      <div class="section-head"><div><p class="eyebrow">CONNECTED MULTI-SELECT FILTERS</p><h2>Explore the plan</h2></div><p class="hint">Click checkboxes to select multiple values — no Ctrl needed.</p></div>
+      <div class="search-wrap"><span>⌕</span><input id="globalSearch" type="search" placeholder="Search customer, specialty, zone or activity…"><button id="clearSearch" class="ghost small">Clear</button></div>
+      <div id="selectedChips" class="chips"></div>
+      <div id="filters" class="filters"></div>
+    </section>
+
+    <section class="kpis">
+      <article class="kpi glass cyan"><span>Total Cost</span><strong id="kpiTotal">—</strong><small>Filtered plan</small></article>
+      <article class="kpi glass violet"><span>Specialties</span><strong id="kpiSpecialties">—</strong><small>Active specialties</small></article>
+      <article class="kpi glass green"><span>Activities</span><strong id="kpiActivities">—</strong><small>Activity types</small></article>
+      <article class="kpi glass amber"><span>Zones</span><strong id="kpiZones">—</strong><small>Active zones</small></article>
+      <article class="kpi glass pink"><span>Customers</span><strong id="kpiCustomers">—</strong><small>Filtered customers</small></article>
+    </section>
+
+    <section class="chart-grid two">
+      <article class="glass card"><div class="card-title"><h3>Cost by Specialty</h3><span>Highest cost first</span></div><div id="specialtyChart" class="chart"></div></article>
+      <article class="glass card"><div class="card-title"><h3>Cost by Zone</h3><span>Filtered plan</span></div><div id="zoneChart" class="chart"></div></article>
+    </section>
+
+    <section class="chart-grid two">
+      <article class="glass card"><div class="card-title"><h3>Type of Activity × Specialty</h3><span>Cost relationship</span></div><div id="activityChart" class="chart"></div></article>
+      <article class="glass card"><div class="card-title"><h3>Cost by Team Member</h3><span>Abdullah Bone · Rana · Abdullah · Momen · Ibraheem · BU</span></div><div id="memberChart" class="chart"></div></article>
+    </section>
+
+    <section class="glass table-card">
+      <div class="card-title"><h3>Team Member Cost Breakdown</h3><span id="memberCount">6 members</span></div>
+      <div class="table-wrap"><table><thead><tr><th>Team Member</th><th>Cost</th><th>% of selected member cost</th></tr></thead><tbody id="memberTable"></tbody></table></div>
+    </section>
+
+    <section class="glass table-card">
+      <div class="card-title"><h3>Specialty / Activity Detail</h3><span>Linked to total row cost</span></div>
+      <div class="table-wrap"><table><thead><tr><th>Specialty</th><th>Type of Activity</th><th>Zone</th><th>Customers</th><th>Cost</th></tr></thead><tbody id="detailTable"></tbody></table></div>
+    </section>
+
+    <section id="empty" class="glass empty"><h2>Load “2027 Tactical Plan - Copy.xlsx”</h2><p>The dashboard reads the <strong>Tracking 2027</strong> sheet locally in your browser. The Excel file is not uploaded to this public repository.</p></section>
+  </main>
+  <footer>2027 Tactical Plan · Interactive GitHub Pages Dashboard</footer>
+  <script src="app.js"></script>
+</body>
+</html>
