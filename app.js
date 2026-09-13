@@ -1,5 +1,5 @@
 const MEMBERS=['Abdullah Bone','Rana','Abdullah','Momen','Ibraheem','BU'];
-const FILTERS=[['member','Team Member'],['specialty','Specialty'],['zone','Zone'],['cost','Cost'],['activity','Type of Activity']];
+const FILTERS=[['member','Team Member'],['specialty','Specialty'],['zone','Zone'],['activity','Type of Activity']];
 let rows=[];
 let selections=Object.fromEntries(FILTERS.map(([k])=>[k,new Set()]));
 let searches=Object.fromEntries(FILTERS.map(([k])=>[k,'']));
@@ -8,7 +8,7 @@ const $=id=>document.getElementById(id);
 const norm=s=>String(s??'').trim().toLowerCase().replace(/\s+/g,' ');
 const n=v=>{const x=parseFloat(String(v??'').replace(/,/g,'').replace(/[^0-9.-]/g,''));return Number.isFinite(x)?x:0};
 const fmt=v=>Number(v||0).toLocaleString(undefined,{maximumFractionDigits:0});
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc=s=>String(s).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
 const displayActivity=v=>v||'No Activity';
 
 function readField(r,aliases){const keys=Object.keys(r);const key=keys.find(k=>aliases.includes(norm(k)));return key?r[key]:''}
@@ -24,21 +24,21 @@ function normalizeRow(r){
 }
 function memberHasCost(r,m){return (r.memberCosts[m]||0)!==0}
 function rowMembers(r){return MEMBERS.filter(m=>memberHasCost(r,m))}
-function valueFor(r,key){if(key==='activity')return displayActivity(r.activity);if(key==='cost')return String(r.cost);return String(r[key]??'')}
+function valueFor(r,key){if(key==='activity')return displayActivity(r.activity);return String(r[key]??'')}
 function memberPass(r){const s=selections.member;if(!s.size)return true;return [...s].some(m=>memberHasCost(r,m))}
 function passes(r,exclude=null){
   if(globalQuery){const hay=[r.customer,r.specialty,r.zone,r.activity,...rowMembers(r)].join(' ').toLowerCase();if(!hay.includes(globalQuery))return false;}
   if(exclude!=='member'&&!memberPass(r))return false;
-  return ['specialty','zone','cost','activity'].every(k=>k===exclude||selections[k].size===0||selections[k].has(valueFor(r,k)));
+  return ['specialty','zone','activity'].every(k=>k===exclude||selections[k].size===0||selections[k].has(valueFor(r,k)));
 }
 function filtered(){return rows.filter(r=>passes(r))}
 function availableValues(key){
   if(key==='member')return MEMBERS.filter(m=>rows.some(r=>passes(r,'member')&&memberHasCost(r,m)));
   const vals=[...new Set(rows.filter(r=>passes(r,key)).map(r=>valueFor(r,key)))];
-  if(key==='cost')vals.sort((a,b)=>Number(a)-Number(b)); else vals.sort((a,b)=>a.localeCompare(b));
+  vals.sort((a,b)=>a.localeCompare(b));
   return vals;
 }
-function displayValue(key,v){return key==='cost'?Number(v).toLocaleString(undefined,{maximumFractionDigits:2}):v}
+function displayValue(key,v){return v}
 function initFilters(){
   $('filters').innerHTML='';
   FILTERS.forEach(([key,label])=>{
@@ -53,7 +53,7 @@ function initFilters(){
 function renderFilter(key){
   const host=$(`f-${key}`);if(!host)return;
   let vals=availableValues(key);const q=searches[key];if(q)vals=vals.filter(v=>norm(displayValue(key,v)).includes(q));
-  host.innerHTML=vals.length?vals.map((v,i)=>`<label class="check" data-value="${esc(v)}"><input type="checkbox" ${selections[key].has(v)?'checked':''}><span>${esc(displayValue(key,v))}</span></label>`).join(''):'<div class="check">No options</div>';
+  host.innerHTML=vals.length?vals.map(v=>`<label class="check" data-value="${esc(v)}"><input type="checkbox" ${selections[key].has(v)?'checked':''}><span>${esc(displayValue(key,v))}</span></label>`).join(''):'<div class="check">No options</div>';
   host.querySelectorAll('input').forEach(input=>input.addEventListener('change',e=>{const v=e.currentTarget.closest('.check').dataset.value;if(e.currentTarget.checked)selections[key].add(v);else selections[key].delete(v);updateAll()}));
 }
 function renderFilters(){FILTERS.forEach(([k])=>renderFilter(k))}
