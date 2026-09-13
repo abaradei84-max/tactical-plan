@@ -25,6 +25,12 @@ function normalizeRow(r){
 function memberHasCost(r,m){return (r.memberCosts[m]||0)!==0}
 function rowMembers(r){return MEMBERS.filter(m=>memberHasCost(r,m))}
 function valueFor(r,key){if(key==='activity')return displayActivity(r.activity);return String(r[key]??'')}
+function selectedMembers(){return selections.member.size?[...selections.member]:[]}
+function effectiveCost(r){
+  const active=selectedMembers();
+  if(!active.length)return r.cost||0;
+  return active.reduce((total,m)=>total+(r.memberCosts[m]||0),0);
+}
 function memberPass(r){const s=selections.member;if(!s.size)return true;return [...s].some(m=>memberHasCost(r,m))}
 function passes(r,exclude=null){
   if(globalQuery){const hay=[r.customer,r.specialty,r.zone,r.activity,...rowMembers(r)].join(' ').toLowerCase();if(!hay.includes(globalQuery))return false;}
@@ -62,37 +68,64 @@ function renderChips(){
   $('selectedChips').innerHTML=chips.join('');
   $('selectedChips').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{selections[b.dataset.k].delete(b.dataset.v);updateAll()}));
 }
-function sum(data,key){return data.reduce((a,r)=>a+(r[key]||0),0)}
-function group(data,key,metric='cost'){
-  const m=new Map();data.forEach(r=>{const k=typeof key==='function'?key(r):r[key];m.set(k,(m.get(k)||0)+(typeof metric==='function'?metric(r):r[metric]||0))});return [...m.entries()]
+function group(data,key,metric=effectiveCost){
+  const m=new Map();
+  data.forEach(r=>{const k=typeof key==='function'?key(r):r[key];const value=typeof metric==='function'?metric(r):(r[metric]||0);m.set(k,(m.get(k)||0)+value});
+  return [...m.entries()]
 }
 function plot(id,traces,layout={}){Plotly.react(id,traces,{paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',font:{color:'#b7c3df'},margin:{l:60,r:20,t:20,b:65},legend:{orientation:'h',y:1.13},xaxis:{gridcolor:'rgba(255,255,255,.06)'},yaxis:{gridcolor:'rgba(255,255,255,.06)'},...layout},{responsive:true,displaylogo:false})}
 function updateKPIs(data){
-  $('kpiTotal').textContent=fmt(sum(data,'cost'));
+  $('kpiTotal').textContent=fmt(data.reduce((a,r)=>a+effectiveCost(r),0));
   $('kpiSpecialties').textContent=new Set(data.map(r=>r.specialty)).size.toLocaleString();
   $('kpiActivities').textContent=new Set(data.map(r=>displayActivity(r.activity))).size.toLocaleString();
   $('kpiZones').textContent=new Set(data.map(r=>r.zone)).size.toLocaleString();
   $('kpiCustomers').textContent=new Set(data.map(r=>r.customer)).size.toLocaleString();
 }
-function memberTotals(data){const active=selections.member.size?[...selections.member]:MEMBERS;return active.map(m=>[m,data.reduce((a,r)=>a+(r.memberCosts[m]||0),0)])}
-function updateCharts(data){
-  const spec=group(data,'specialty').sort((a,b)=>b[1]-a[1]);plot('specialtyChart',[{x:spec.map(x=>x[1]),y:spec.map(x=>x[0]),type:'bar',orientation:'h',name:'Cost'}],{showlegend:false,margin:{l:110,r:20,t:20,b:45}});
-  const zones=group(data,'zone').sort((a,b)=>b[1]-a[1]);plot('zoneChart',[{x:zones.map(x=>x[0]),y:zones.map(x=>x[1]),type:'bar',name:'Cost'}],{showlegend:false});
-  const specs=spec.slice(0,12).map(x=>x[0]);const activities=[...new Set(data.map(r=>displayActivity(r.activity)))];
-  const z=activities.map(a=>specs.map(s=>data.filter(r=>r.specialty===s&&displayActivity(r.activity)===a).reduce((t,r)=>t+r.cost,0)));
-  plot('activityChart',[{x:specs,y:activities,z,type:'heatmap',hovertemplate:'Specialty: %{x}<br>Activity: %{y}<br>Cost: %{z:,.0f}<extra></extra>',colorscale:'Viridis'}],{margin:{l:115,r:20,t:20,b:85}});
-  const mt=memberTotals(data).sort((a,b)=>b[1]-a[1]);plot('memberChart',[{x:mt.map(x=>x[0]),y:mt.map(x=>x[1]),type:'bar',name:'Cost'}],{showlegend:false});
+function memberTotals(data){
+  const active=selections.member.size?[...selections.member]:MEMBERS;
+  return active.map(m=>[m,data.reduce((a,r)=>a+(r.memberCosts[m]||0),0)])
 }
-function updateMemberTable(data){const totals=memberTotals(data).sort((a,b)=>b[1]-a[1]);const total=totals.reduce((a,x)=>a+x[1],0);$('memberCount').textContent=`${totals.length} member${totals.length===1?'':'s'}`;$('memberTable').innerHTML=totals.map(([m,c])=>`<tr><td>${esc(m)}</td><td>${fmt(c)}</td><td>${total?((c/total)*100).toFixed(1):'0.0'}%</td></tr>`).join('')}
+function updateCharts(data){
+  const spec=group(data,'specialty').sort((a,b)=>b[1]-a[1]);
+  plot('specialtyChart',[{x:spec.map(x=>x[1]),y:spec.map(x=>x[0]),type:'bar',orientation:'h',name:'Cost'}],{showlegend:false,margin:{l:110,r:20,t:20,b:45}});
+  const zones=group(data,'zone').sort((a,b)=>b[1]-a[1]);
+  plot('zoneChart',[{x:zones.map(x=>x[0]),y:zones.map(x=>x[1]),type:'bar',name:'Cost'}],{showlegend:false});
+  const specs=spec.slice(0,12).map(x=>x[0]);const activities=[...new Set(data.map(r=>displayActivity(r.activity)))];
+  const z=activities.map(a=>specs.map(s=>data.filter(r=>r.specialty===s&&displayActivity(r.activity)===a).reduce((t,r)=>t+effectiveCost(r),0)));
+  plot('activityChart',[{x:specs,y:activities,z,type:'heatmap',hovertemplate:'Specialty: %{x}<br>Activity: %{y}<br>Cost: %{z:,.0f}<extra></extra>',colorscale:'Viridis'}],{margin:{l:115,r:20,t:20,b:85}});
+  const mt=memberTotals(data).sort((a,b)=>b[1]-a[1]);
+  plot('memberChart',[{x:mt.map(x=>x[0]),y:mt.map(x=>x[1]),type:'bar',name:'Cost'}],{showlegend:false});
+}
+function updateMemberTable(data){
+  const totals=memberTotals(data).sort((a,b)=>b[1]-a[1]);
+  const total=totals.reduce((a,x)=>a+x[1],0);
+  $('memberCount').textContent=`${totals.length} member${totals.length===1?'':'s'}`;
+  $('memberTable').innerHTML=totals.map(([m,c])=>`<tr><td>${esc(m)}</td><td>${fmt(c)}</td><td>${total?((c/total)*100).toFixed(1):'0.0'}%</td></tr>`).join('')
+}
 function updateDetail(data){
-  const m=new Map();data.forEach(r=>{const k=[r.specialty,displayActivity(r.activity),r.zone].join('|||');if(!m.has(k))m.set(k,{specialty:r.specialty,activity:displayActivity(r.activity),zone:r.zone,customers:new Set(),cost:0});const x=m.get(k);x.customers.add(r.customer);x.cost+=r.cost});
-  const arr=[...m.values()].sort((a,b)=>b.cost-a.cost).slice(0,100);$('detailTable').innerHTML=arr.map(x=>`<tr><td>${esc(x.specialty)}</td><td>${esc(x.activity)}</td><td>${esc(x.zone)}</td><td>${x.customers.size}</td><td>${fmt(x.cost)}</td></tr>`).join('')||'<tr><td colspan="5">No matching data</td></tr>';
+  const m=new Map();
+  data.forEach(r=>{
+    const k=[r.specialty,displayActivity(r.activity),r.zone].join('|||');
+    if(!m.has(k))m.set(k,{specialty:r.specialty,activity:displayActivity(r.activity),zone:r.zone,customers:new Set(),cost:0});
+    const x=m.get(k);x.customers.add(r.customer);x.cost+=effectiveCost(r);
+  });
+  const arr=[...m.values()].filter(x=>x.cost!==0).sort((a,b)=>b.cost-a.cost).slice(0,100);
+  $('detailTable').innerHTML=arr.map(x=>`<tr><td>${esc(x.specialty)}</td><td>${esc(x.activity)}</td><td>${esc(x.zone)}</td><td>${x.customers.size}</td><td>${fmt(x.cost)}</td></tr>`).join('')||'<tr><td colspan="5">No matching data</td></tr>';
 }
 function updateAll(){if(!rows.length){renderChips();return}renderFilters();renderChips();const data=filtered();updateKPIs(data);updateCharts(data);updateMemberTable(data);updateDetail(data);$('status').textContent=`${data.length.toLocaleString()} / ${rows.length.toLocaleString()} rows`;$('empty').classList.add('hidden')}
 function resetFilters(){selections=Object.fromEntries(FILTERS.map(([k])=>[k,new Set()]));searches=Object.fromEntries(FILTERS.map(([k])=>[k,'']));globalQuery='';$('globalSearch').value='';FILTERS.forEach(([k])=>{const el=$(`fs-${k}`);if(el)el.value=''});updateAll()}
 function findTrackingSheet(wb){return wb.Sheets['Tracking 2027']||wb.Sheets[wb.SheetNames.find(n=>norm(n)==='tracking 2027')]}
 async function loadExcel(file){
-  $('status').textContent='Reading Excel…';const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array'});const ws=findTrackingSheet(wb);if(!ws)throw new Error('Tracking 2027 sheet not found');const raw=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true});rows=raw.map(normalizeRow).filter(r=>r.customer!=='Unknown'||r.specialty!=='Unknown'||r.cost!==0);resetFilters();$('status').textContent=`${file.name} • ${rows.length.toLocaleString()} rows`;updateAll();
+  $('status').textContent='Reading Excel…';
+  const buf=await file.arrayBuffer();
+  const wb=XLSX.read(buf,{type:'array'});
+  const ws=findTrackingSheet(wb);
+  if(!ws)throw new Error('Tracking 2027 sheet not found');
+  const raw=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true});
+  rows=raw.map(normalizeRow).filter(r=>r.customer!=='Unknown'||r.specialty!=='Unknown'||r.cost!==0||rowMembers(r).length);
+  resetFilters();
+  $('status').textContent=`${file.name} • ${rows.length.toLocaleString()} rows`;
+  updateAll();
 }
 $('excelFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{await loadExcel(f)}catch(err){console.error(err);$('status').textContent=err.message||'Could not load file'}});
 $('globalSearch').addEventListener('input',e=>{globalQuery=norm(e.target.value);updateAll()});
